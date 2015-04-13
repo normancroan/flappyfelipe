@@ -20,6 +20,8 @@ class GameScene: SKScene {
     
     let kGravity: CGFloat = -1500.0
     let kImpulse: CGFloat = 400.0
+    let kNumForegrounds = 2
+    let kGroundSpeed: CGFloat = 150.0
     
     let worldNode = SKNode()
     var playableStart: CGFloat = 0
@@ -60,12 +62,15 @@ class GameScene: SKScene {
     }
     
     func setupForeground() {
-        let foreground = SKSpriteNode(imageNamed: "Ground")
-        foreground.anchorPoint = CGPoint(x: 0, y: 1)
-        foreground.position = CGPoint(x: 0, y: playableStart)
-        foreground.zPosition = Layer.Foreground.rawValue
-        worldNode.addChild(foreground)
         
+        for i in 0..<kNumForegrounds {
+            let foreground = SKSpriteNode(imageNamed: "Ground")
+            foreground.anchorPoint = CGPoint(x: 0, y: 1)
+            foreground.position = CGPoint(x: CGFloat(i) * size.width, y: playableStart)
+            foreground.zPosition = Layer.Foreground.rawValue
+            foreground.name = "foreground"
+            worldNode.addChild(foreground)
+        }
     }
     
     func setupPlayer() {
@@ -99,6 +104,7 @@ class GameScene: SKScene {
         lastUpdateTime = currentTime
         
         updatePlayer()
+        updateForeground()
     }
     
     func updatePlayer() {
@@ -116,6 +122,21 @@ class GameScene: SKScene {
         if player.position.y - player.size.height/2 < playableStart {
             player.position = CGPoint(x: player.position.x, y: playableStart + player.size.height/2)
         }
+        
+    }
+    
+    func updateForeground() {
+        
+        worldNode.enumerateChildNodesWithName("foreground", usingBlock: { node, stop in
+            if let foreground = node as? SKSpriteNode {
+                let moveAmt = CGPoint(x: -self.kGroundSpeed * CGFloat(self.dt), y: 0)
+                foreground.position += moveAmt
+                
+                if foreground.position.x < -foreground.size.width {
+                    foreground.position += CGPoint(x: foreground.size.width * CGFloat(self.kNumForegrounds), y: 0)
+                }
+            }
+        })
         
     }
     
