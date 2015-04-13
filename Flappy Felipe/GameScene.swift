@@ -7,6 +7,7 @@
 //
 
 import SpriteKit
+import AVFoundation
 
 
 enum Layer: CGFloat {
@@ -17,15 +18,23 @@ enum Layer: CGFloat {
 
 class GameScene: SKScene {
     
+    let kGravity: CGFloat = -1500.0
+    let kImpulse: CGFloat = 400.0
+    
     let worldNode = SKNode()
     var playableStart: CGFloat = 0
     var playableHeight: CGFloat = 0
+    let player = SKSpriteNode(imageNamed: "Bird0")
+    var lastUpdateTime: NSTimeInterval = 0
+    var dt: NSTimeInterval = 0
+    var playerVelocity = CGPoint.zeroPoint
+    
     
     override func didMoveToView(view: SKView) {
         addChild(worldNode)
         setupBackground()
         setupForeground()
-      
+        setupPlayer()
     }
     
     //MARK: -Setup Methods
@@ -51,14 +60,51 @@ class GameScene: SKScene {
         
     }
     
+    func setupPlayer() {
+        
+        player.position = CGPoint(x: size.width * 0.2, y: playableHeight * 0.4 + playableStart)
+        player.zPosition = Layer.Player.rawValue
+        worldNode.addChild(player)
+        
+        
+    }
+   //MARK: - Gameplay
+    
+    func flapPlayer() {
+        playerVelocity = CGPoint(x: 0, y: kImpulse)
+    }
+    
     override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
-        
+        flapPlayer()
     }
-   
+   //MARK: - Updates
     override func update(currentTime: CFTimeInterval) {
+        if lastUpdateTime > 0 {
+            dt = currentTime - lastUpdateTime
+        } else {
+            dt = 0
+        }
+        lastUpdateTime = currentTime
         
+        updatePlayer()
     }
     
-    
+    func updatePlayer() {
+        
+        // Apply gravity
+        let gravity = CGPoint(x: 0, y: kGravity)
+        let gravityStep = gravity * CGFloat(dt)
+        playerVelocity += gravityStep
+        
+        // Apply velocity
+        let velocityStep = playerVelocity * CGFloat(dt)
+        player.position += velocityStep
+        
+        // Temprary halt when hits ground
+        if player.position.y - player.size.height/2 < playableStart {
+            player.position = CGPoint(x: player.position.x, y: playableStart + player.size.height/2)
+        }
+        
+    }
     
 }
