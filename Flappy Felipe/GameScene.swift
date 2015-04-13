@@ -30,6 +30,14 @@ class GameScene: SKScene {
     var playerVelocity = CGPoint.zeroPoint
     
     
+    let dingAction = SKAction.playSoundFileNamed("ding.wav", waitForCompletion: false)
+    let flapAction = SKAction.playSoundFileNamed("flapping.wav", waitForCompletion: false)
+    let whackAction = SKAction.playSoundFileNamed("whack.wav", waitForCompletion: false)
+    let fallingAction = SKAction.playSoundFileNamed("falling.wav", waitForCompletion: false)
+    let hitGroundAction = SKAction.playSoundFileNamed("hitGround.wav", waitForCompletion: false)
+    let popAction = SKAction.playSoundFileNamed("pop.wav", waitForCompletion: false)
+    let coinAction = SKAction.playSoundFileNamed("coin.wav", waitForCompletion: false)
+    
     override func didMoveToView(view: SKView) {
         addChild(worldNode)
         setupBackground()
@@ -71,6 +79,10 @@ class GameScene: SKScene {
    //MARK: - Gameplay
     
     func flapPlayer() {
+    //Apply Sound
+        runAction(flapAction)
+        
+    //Apply Impulse
         playerVelocity = CGPoint(x: 0, y: kImpulse)
     }
     
