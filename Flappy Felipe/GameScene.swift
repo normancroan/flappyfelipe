@@ -12,6 +12,7 @@ import AVFoundation
 
 enum Layer: CGFloat {
     case Background
+    case Obstacle
     case Foreground
     case Player
 }
@@ -22,6 +23,11 @@ class GameScene: SKScene {
     let kImpulse: CGFloat = 400.0
     let kNumForegrounds = 2
     let kGroundSpeed: CGFloat = 150.0
+    let kBottomObstacleMinFraction: CGFloat = 0.1
+    let kBottomObstacleMaxFraction: CGFloat = 0.6
+    let kGapMultiplier: CGFloat = 3.5
+    let kFirstSpawnDelay: NSTimeInterval = 1.75
+    let kEverySpawnDelay: NSTimeInterval = 1.5
     
     let worldNode = SKNode()
     var playableStart: CGFloat = 0
@@ -30,7 +36,7 @@ class GameScene: SKScene {
     var lastUpdateTime: NSTimeInterval = 0
     var dt: NSTimeInterval = 0
     var playerVelocity = CGPoint.zeroPoint
-    
+    let sombrero = SKSpriteNode(imageNamed: "Sombrero")
     
     let dingAction = SKAction.playSoundFileNamed("ding.wav", waitForCompletion: false)
     let flapAction = SKAction.playSoundFileNamed("flapping.wav", waitForCompletion: false)
@@ -45,6 +51,8 @@ class GameScene: SKScene {
         setupBackground()
         setupForeground()
         setupPlayer()
+        setupSombrero()
+        startSpawning()
     }
     
     //MARK: -Setup Methods
@@ -81,7 +89,61 @@ class GameScene: SKScene {
         
         
     }
+    
+    func setupSombrero() {
+        
+        sombrero.position = CGPoint(x: 31 - sombrero.size.width/2, y: 29 - sombrero.size.height/2)
+        player.addChild(sombrero)
+        
+    }
    //MARK: - Gameplay
+    
+    func createObstacle() -> SKSpriteNode {
+        let sprite = SKSpriteNode(imageNamed: "Cactus")
+        sprite.zPosition = Layer.Obstacle.rawValue
+        return sprite
+    }
+    
+    func spawnObstacle() {
+        
+        let bottomObstacle = createObstacle()
+        let startX = size.width + bottomObstacle.size.width/2
+        
+        let bottomObstacleMin = (playableStart - bottomObstacle.size.height/2) + playableHeight * kBottomObstacleMinFraction
+        let bottomObstacleMax = (playableStart - bottomObstacle.size.height/2) + playableHeight * kBottomObstacleMaxFraction
+        bottomObstacle.position = CGPointMake(startX, CGFloat.random(min: bottomObstacleMin, max: bottomObstacleMax))
+        worldNode.addChild(bottomObstacle)
+        
+        
+        let topObstacle = createObstacle()
+        topObstacle.zRotation = CGFloat(180).degreesToRadians()
+        topObstacle.position = CGPoint(x: startX, y: bottomObstacle.position.y + bottomObstacle.size.height/2 + topObstacle.size.height/2 + player.size.height * kGapMultiplier)
+        worldNode.addChild(topObstacle)
+        
+        let moveX = size.width + topObstacle.size.width
+        let moveDuration = moveX / kGroundSpeed
+        let sequence = SKAction.sequence([
+            SKAction.moveByX(-moveX, y: 0, duration: NSTimeInterval(moveDuration)),
+            SKAction.removeFromParent()
+            ])
+        topObstacle.runAction(sequence)
+        bottomObstacle.runAction(sequence)
+    }
+    
+    
+    func startSpawning() {
+        
+        let firstDelay = SKAction.waitForDuration(kFirstSpawnDelay)
+        let spawn = SKAction.runBlock(spawnObstacle)
+        let everyDelay = SKAction.waitForDuration(kEverySpawnDelay)
+        let spawnSequence = SKAction.sequence([
+            spawn, everyDelay
+            ])
+        let foreverSpawn = SKAction.repeatActionForever(spawnSequence)
+        let overallSequence = SKAction.sequence([firstDelay, foreverSpawn])
+        runAction(overallSequence)
+        
+    }
     
     func flapPlayer() {
     //Apply Sound
@@ -89,6 +151,12 @@ class GameScene: SKScene {
         
     //Apply Impulse
         playerVelocity = CGPoint(x: 0, y: kImpulse)
+        
+    //Move Sombrero
+        let moveUp = SKAction.moveByX(0, y: 12, duration: 0.15)
+        moveUp.timingMode = .EaseInEaseOut
+        let moveDown = moveUp.reversedAction()
+        sombrero.runAction(SKAction.sequence([moveUp, moveDown]))
     }
     
     override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
