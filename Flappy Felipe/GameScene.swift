@@ -32,6 +32,13 @@ struct PhysicsCategory {
     static let Ground: UInt32 =   0b100 // 4
 }
 
+protocol GameSceneDelegate {
+    
+    func screenshot() -> UIImage
+    func shareString(string: String, url: NSURL, image: UIImage)
+    
+}
+
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
     let kGravity: CGFloat = -1500.0
@@ -60,6 +67,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var gameState: GameState = .Play
     var scoreLabel: SKLabelNode!
     var score = 0
+    var gameSceneDelegate: GameSceneDelegate
     
     let dingAction = SKAction.playSoundFileNamed("ding.wav", waitForCompletion: false)
     let flapAction = SKAction.playSoundFileNamed("flapping.wav", waitForCompletion: false)
@@ -68,6 +76,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let hitGroundAction = SKAction.playSoundFileNamed("hitGround.wav", waitForCompletion: false)
     let popAction = SKAction.playSoundFileNamed("pop.wav", waitForCompletion: false)
     let coinAction = SKAction.playSoundFileNamed("coin.wav", waitForCompletion: false)
+    
+    init(size: CGSize, delegate:GameSceneDelegate) {
+        self.gameSceneDelegate = delegate
+        super.init(size: size)
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func didMoveToView(view: SKView) {
         
@@ -364,6 +381,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
+        
+        let touch = touches.anyObject()
+        let touchLocation = touch?.locationInNode(self)
+        
         switch gameState {
         case .MainMenu:
             break
@@ -377,7 +398,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case .ShowingScore:
             break
         case .GameOver:
+            if touchLocation?.x < size.width * 0.6 {
             switchToNewGame()
+            } else {
+                shareScore()
+            }
             break
         }
     }
@@ -520,7 +545,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         runAction(popAction)
         
-        let newScene = GameScene(size: size)
+        let newScene = GameScene(size: size, delegate: gameSceneDelegate)
         let transition = SKTransition.fadeWithColor(SKColor.blackColor(), duration: 0.5)
         view?.presentScene(newScene, transition: transition)
         
@@ -538,6 +563,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func setBestScore(bestScore: Int) {
         NSUserDefaults.standardUserDefaults().setInteger(bestScore, forKey: "BestScore")
         NSUserDefaults.standardUserDefaults().synchronize()
+    }
+    
+    
+    func shareScore() {
+        
+        let urlString = "http://normancroan.com"
+        let url = NSURL(string: urlString)
+        
+        let screenshot = gameSceneDelegate.screenshot()
+        let initialTextString = "OMG! I scored \(score) points in Flappy Felipe!"
+        gameSceneDelegate.shareString(initialTextString, url: url!, image: screenshot)
+        
     }
     
     // MARK: Physics
