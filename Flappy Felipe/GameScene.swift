@@ -26,9 +26,9 @@ enum GameState {
 
 struct PhysicsCategory {
     static let None: UInt32 = 0
-    static let Player: UInt32 = 0b1
-    static let Obstacle: UInt32 = 0b10
-    static let Ground: UInt32 = 0b100
+    static let Player: UInt32 =     0b1 // 1
+    static let Obstacle: UInt32 =  0b10 // 2
+    static let Ground: UInt32 =   0b100 // 4
 }
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -68,17 +68,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         physicsWorld.gravity = CGVector(dx: 0, dy: 0)
         physicsWorld.contactDelegate = self
         
-        
-        
         addChild(worldNode)
         setupBackground()
         setupForeground()
         setupPlayer()
         setupSombrero()
         startSpawning()
+        
+        flapPlayer()
+        
     }
     
-    //MARK: -Setup Methods
+    // MARK: Setup methods
     
     func setupBackground() {
         
@@ -98,6 +99,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.physicsBody?.categoryBitMask = PhysicsCategory.Ground
         self.physicsBody?.collisionBitMask = 0
         self.physicsBody?.contactTestBitMask = PhysicsCategory.Player
+        
     }
     
     func setupForeground() {
@@ -110,6 +112,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             foreground.name = "foreground"
             worldNode.addChild(foreground)
         }
+        
     }
     
     func setupPlayer() {
@@ -129,7 +132,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         CGPathAddLineToPoint(path, nil, 4 - offsetX, 1 - offsetY)
         CGPathAddLineToPoint(path, nil, 3 - offsetX, 15 - offsetY)
         
-        
         CGPathCloseSubpath(path)
         
         player.physicsBody = SKPhysicsBody(polygonFromPath: path)
@@ -139,7 +141,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         worldNode.addChild(player)
         
-        
     }
     
     func setupSombrero() {
@@ -148,7 +149,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player.addChild(sombrero)
         
     }
-   //MARK: - Gameplay
+    
+    // MARK: Gameplay
     
     func createObstacle() -> SKSpriteNode {
         let sprite = SKSpriteNode(imageNamed: "Cactus")
@@ -165,7 +167,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         CGPathAddLineToPoint(path, nil, 39 - offsetX, 315 - offsetY)
         CGPathAddLineToPoint(path, nil, 51 - offsetX, 306 - offsetY)
         CGPathAddLineToPoint(path, nil, 49 - offsetX, 1 - offsetY)
-        
         
         CGPathCloseSubpath(path)
         
@@ -188,7 +189,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bottomObstacle.name = "BottomObstacle"
         worldNode.addChild(bottomObstacle)
         
-        
         let topObstacle = createObstacle()
         topObstacle.zRotation = CGFloat(180).degreesToRadians()
         topObstacle.position = CGPoint(x: startX, y: bottomObstacle.position.y + bottomObstacle.size.height/2 + topObstacle.size.height/2 + player.size.height * kGapMultiplier)
@@ -203,8 +203,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ])
         topObstacle.runAction(sequence)
         bottomObstacle.runAction(sequence)
+        
     }
-    
     
     func startSpawning() {
         
@@ -224,24 +224,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         removeActionForKey("spawn")
         
-        worldNode.enumerateChildNodesWithName("TopObstacle", usingBlock: { node, stop in node.removeAllActions()
+        worldNode.enumerateChildNodesWithName("TopObstacle", usingBlock: { node, stop in
+            node.removeAllActions()
         })
-        worldNode.enumerateChildNodesWithName("BottomObstacle", usingBlock: { node, stop in node.removeAllActions()
+        worldNode.enumerateChildNodesWithName("BottomObstacle", usingBlock: { node, stop in
+            node.removeAllActions()
         })
+        
     }
     
     func flapPlayer() {
-    //Apply Sound
+        
+        // Play sound
         runAction(flapAction)
         
-    //Apply Impulse
+        // Apply impulse
         playerVelocity = CGPoint(x: 0, y: kImpulse)
         
-    //Move Sombrero
+        // Move sombrero
         let moveUp = SKAction.moveByX(0, y: 12, duration: 0.15)
         moveUp.timingMode = .EaseInEaseOut
         let moveDown = moveUp.reversedAction()
         sombrero.runAction(SKAction.sequence([moveUp, moveDown]))
+        
     }
     
     override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
@@ -256,12 +261,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case .Falling:
             break
         case .ShowingScore:
+            switchToNewGame()
             break
         case .GameOver:
             break
         }
     }
-   //MARK: - Updates
+    
+    // MARK: Updates
+    
     override func update(currentTime: CFTimeInterval) {
         if lastUpdateTime > 0 {
             dt = currentTime - lastUpdateTime
@@ -271,26 +279,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         lastUpdateTime = currentTime
         
         switch gameState {
-            case .MainMenu:
-                break
-            case .Tutorial:
-                break
-            case .Play:
-                updateForeground()
-                updatePlayer()
-                checkHitObstacle()
-                checkHitGround()
-                break
-            case .Falling:
-                updatePlayer()
-                checkHitGround()
-                break
-            case .ShowingScore:
-                break
-            case .GameOver:
-                break
+        case .MainMenu:
+            break
+        case .Tutorial:
+            break
+        case .Play:
+            updateForeground()
+            updatePlayer()
+            checkHitObstacle()
+            checkHitGround()
+            break
+        case .Falling:
+            updatePlayer()
+            checkHitGround()
+            break
+        case .ShowingScore:
+            break
+        case .GameOver:
+            break
         }
-
+        
     }
     
     func updatePlayer() {
@@ -304,7 +312,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let velocityStep = playerVelocity * CGFloat(dt)
         player.position += velocityStep
         
-        // Temprary halt when hits ground
+        // Temporary halt when hits ground
         if player.position.y - player.size.height/2 < playableStart {
             player.position = CGPoint(x: player.position.x, y: playableStart + player.size.height/2)
         }
@@ -321,8 +329,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 if foreground.position.x < -foreground.size.width {
                     foreground.position += CGPoint(x: foreground.size.width * CGFloat(self.kNumForegrounds), y: 0)
                 }
+                
             }
         })
+        
     }
     
     func checkHitObstacle() {
@@ -333,6 +343,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func checkHitGround() {
+        
         if hitGround {
             hitGround = false
             playerVelocity = CGPoint.zeroPoint
@@ -341,8 +352,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             runAction(hitGroundAction)
             switchToShowScore()
         }
+        
     }
-    //MARK: - Game States
+    
+    // MARK: Game States
     
     func switchToFalling() {
         
@@ -356,6 +369,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         player.removeAllActions()
         stopSpawning()
+        
     }
     
     func switchToShowScore() {
@@ -364,7 +378,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         stopSpawning()
     }
     
-    //MARK: - Physics
+    func switchToNewGame() {
+        
+        runAction(popAction)
+        
+        let newScene = GameScene(size: size)
+        let transition = SKTransition.fadeWithColor(SKColor.blackColor(), duration: 0.5)
+        view?.presentScene(newScene, transition: transition)
+        
+    }
+    
+    // MARK: Physics
     
     func didBeginContact(contact: SKPhysicsContact) {
         let other = contact.bodyA.categoryBitMask == PhysicsCategory.Player ? contact.bodyB : contact.bodyA
@@ -376,4 +400,5 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             hitObstacle = true
         }
     }
+    
 }
