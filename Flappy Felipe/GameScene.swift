@@ -15,6 +15,15 @@ enum Layer: CGFloat {
     case Player
 }
 
+enum GameState {
+    case MainMenu
+    case Tutorial
+    case Play
+    case Falling
+    case ShowingScore
+    case GameOver
+}
+
 struct PhysicsCategory {
     static let None: UInt32 = 0
     static let Player: UInt32 = 0b1
@@ -22,7 +31,7 @@ struct PhysicsCategory {
     static let Ground: UInt32 = 0b100
 }
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
     
     let kGravity: CGFloat = -1500.0
     let kImpulse: CGFloat = 400.0
@@ -42,6 +51,9 @@ class GameScene: SKScene {
     var dt: NSTimeInterval = 0
     var playerVelocity = CGPoint.zeroPoint
     let sombrero = SKSpriteNode(imageNamed: "Sombrero")
+    var hitGround = false
+    var hitObstacle = false
+    var gameState: GameState = .Play
     
     let dingAction = SKAction.playSoundFileNamed("ding.wav", waitForCompletion: false)
     let flapAction = SKAction.playSoundFileNamed("flapping.wav", waitForCompletion: false)
@@ -54,6 +66,8 @@ class GameScene: SKScene {
     override func didMoveToView(view: SKView) {
         
         physicsWorld.gravity = CGVector(dx: 0, dy: 0)
+        physicsWorld.contactDelegate = self
+        
         
         
         addChild(worldNode)
@@ -171,12 +185,14 @@ class GameScene: SKScene {
         let bottomObstacleMin = (playableStart - bottomObstacle.size.height/2) + playableHeight * kBottomObstacleMinFraction
         let bottomObstacleMax = (playableStart - bottomObstacle.size.height/2) + playableHeight * kBottomObstacleMaxFraction
         bottomObstacle.position = CGPointMake(startX, CGFloat.random(min: bottomObstacleMin, max: bottomObstacleMax))
+        bottomObstacle.name = "BottomObstacle"
         worldNode.addChild(bottomObstacle)
         
         
         let topObstacle = createObstacle()
         topObstacle.zRotation = CGFloat(180).degreesToRadians()
         topObstacle.position = CGPoint(x: startX, y: bottomObstacle.position.y + bottomObstacle.size.height/2 + topObstacle.size.height/2 + player.size.height * kGapMultiplier)
+        topObstacle.name = "TopObstacle"
         worldNode.addChild(topObstacle)
         
         let moveX = size.width + topObstacle.size.width
@@ -200,8 +216,18 @@ class GameScene: SKScene {
             ])
         let foreverSpawn = SKAction.repeatActionForever(spawnSequence)
         let overallSequence = SKAction.sequence([firstDelay, foreverSpawn])
-        runAction(overallSequence)
+        runAction(overallSequence, withKey: "spawn")
         
+    }
+    
+    func stopSpawning() {
+        
+        removeActionForKey("spawn")
+        
+        worldNode.enumerateChildNodesWithName("TopObstacle", usingBlock: { node, stop in node.removeAllActions()
+        })
+        worldNode.enumerateChildNodesWithName("BottomObstacle", usingBlock: { node, stop in node.removeAllActions()
+        })
     }
     
     func flapPlayer() {
@@ -219,7 +245,21 @@ class GameScene: SKScene {
     }
     
     override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
-        flapPlayer()
+        switch gameState {
+        case .MainMenu:
+            break
+        case .Tutorial:
+            break
+        case .Play:
+            flapPlayer()
+            break
+        case .Falling:
+            break
+        case .ShowingScore:
+            break
+        case .GameOver:
+            break
+        }
     }
    //MARK: - Updates
     override func update(currentTime: CFTimeInterval) {
@@ -230,8 +270,27 @@ class GameScene: SKScene {
         }
         lastUpdateTime = currentTime
         
-        updatePlayer()
-        updateForeground()
+        switch gameState {
+            case .MainMenu:
+                break
+            case .Tutorial:
+                break
+            case .Play:
+                updateForeground()
+                updatePlayer()
+                checkHitObstacle()
+                checkHitGround()
+                break
+            case .Falling:
+                updatePlayer()
+                checkHitGround()
+                break
+            case .ShowingScore:
+                break
+            case .GameOver:
+                break
+        }
+
     }
     
     func updatePlayer() {
@@ -264,7 +323,57 @@ class GameScene: SKScene {
                 }
             }
         })
-        
     }
     
+    func checkHitObstacle() {
+        if hitObstacle {
+            hitObstacle = false
+            switchToFalling()
+        }
+    }
+    
+    func checkHitGround() {
+        if hitGround {
+            hitGround = false
+            playerVelocity = CGPoint.zeroPoint
+            player.zRotation = CGFloat(-90).degreesToRadians()
+            player.position = CGPoint(x: player.position.x, y: playableStart + player.size.width/2)
+            runAction(hitGroundAction)
+            switchToShowScore()
+        }
+    }
+    //MARK: - Game States
+    
+    func switchToFalling() {
+        
+        gameState = .Falling
+        
+        runAction(SKAction.sequence([
+            whackAction,
+            SKAction.waitForDuration(0.1),
+            fallingAction
+            ]))
+        
+        player.removeAllActions()
+        stopSpawning()
+    }
+    
+    func switchToShowScore() {
+        gameState = .ShowingScore
+        player.removeAllActions()
+        stopSpawning()
+    }
+    
+    //MARK: - Physics
+    
+    func didBeginContact(contact: SKPhysicsContact) {
+        let other = contact.bodyA.categoryBitMask == PhysicsCategory.Player ? contact.bodyB : contact.bodyA
+        
+        if other.categoryBitMask == PhysicsCategory.Ground {
+            hitGround = true
+        }
+        if other.categoryBitMask == PhysicsCategory.Obstacle {
+            hitObstacle = true
+        }
+    }
 }
