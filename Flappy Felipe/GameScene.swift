@@ -45,6 +45,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let kEverySpawnDelay: NSTimeInterval = 1.5
     let kFontName = "AmericanTypeWriter-Bold"
     let kMargin: CGFloat = 20.0
+    let kAnimDelay = 0.3
     
     let worldNode = SKNode()
     var playableStart: CGFloat = 0
@@ -167,6 +168,100 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         worldNode.addChild(scoreLabel)
     }
     
+    func setupScoreCard() {
+        
+        if score > bestScore() {
+            setBestScore(score)
+        }
+        
+        let scorecard = SKSpriteNode(imageNamed: "ScoreCard")
+        scorecard.position = CGPoint(x: size.width * 0.5, y: size.height * 0.5)
+        scorecard.name = "Tutorial"
+        scorecard.zPosition = Layer.UI.rawValue
+        worldNode.addChild(scorecard)
+        
+        
+        let lastScore = SKLabelNode(fontNamed: kFontName)
+        lastScore.fontColor = SKColor(red: 101.0/255.0, green: 71.0/255.0, blue: 73.0/255.0, alpha: 1.0)
+        lastScore.position = CGPoint(x: -scorecard.size.width * 0.25,
+            y: -scorecard.size.height * 0.2)
+        lastScore.text = "\(score)"
+        scorecard.addChild(lastScore)
+        
+        let bestScoreLabel = SKLabelNode(fontNamed: kFontName)
+        bestScoreLabel.fontColor = SKColor(red: 101.0/255.0, green: 71.0/255.0, blue: 73.0/255.0, alpha: 1.0)
+        bestScoreLabel.position = CGPoint(x: scorecard.size.width * 0.25,
+            y: -scorecard.size.height * 0.2)
+        bestScoreLabel.text = "\(self.bestScore())"
+        scorecard.addChild(bestScoreLabel)
+        
+        let gameOver = SKSpriteNode(imageNamed: "GameOver")
+        gameOver.position = CGPoint(x: size.width/2, y: size.height/2 + scorecard.size.height/2 + kMargin + gameOver.size.height/2)
+        gameOver.zPosition = Layer.UI.rawValue
+        worldNode.addChild(gameOver)
+        
+        let okButton = SKSpriteNode(imageNamed: "Button")
+        okButton.position = CGPoint(x: size.width * 0.25, y: size.height/2 - scorecard.size.height/2 - kMargin - okButton.size.height/2)
+        okButton.zPosition = Layer.UI.rawValue
+        worldNode.addChild(okButton)
+        
+        let ok = SKSpriteNode(imageNamed: "OK")
+        ok.position = CGPoint.zeroPoint
+        ok.zPosition = Layer.UI.rawValue
+        okButton.addChild(ok)
+        
+        let shareButton = SKSpriteNode(imageNamed: "Button")
+        shareButton.position = CGPoint(x: size.width * 0.75, y: size.height/2 - scorecard.size.height/2 - kMargin - shareButton.size.height/2)
+        shareButton.zPosition = Layer.UI.rawValue
+        worldNode.addChild(shareButton)
+        
+        let share = SKSpriteNode(imageNamed: "Share")
+        share.position = CGPoint.zeroPoint
+        share.zPosition = Layer.UI.rawValue
+        shareButton.addChild(share)
+        
+        gameOver.setScale(0)
+        gameOver.alpha = 0
+        let group = SKAction.group([
+            SKAction.fadeInWithDuration(kAnimDelay),
+            SKAction.scaleTo(1.0, duration: kAnimDelay)
+            ])
+        group.timingMode = .EaseInEaseOut
+        gameOver.runAction(SKAction.sequence([
+            SKAction.waitForDuration(kAnimDelay),
+            group
+            ]))
+        
+        scorecard.position = CGPoint(x: size.width * 0.5, y: -scorecard.size.height/2)
+        let moveTo = SKAction.moveTo(CGPoint(x: size.width/2, y: size.height/2), duration: kAnimDelay)
+        moveTo.timingMode = .EaseInEaseOut
+        scorecard.runAction(SKAction.sequence([
+            SKAction.waitForDuration(kAnimDelay * 2),
+            moveTo
+            ]))
+        
+        okButton.alpha = 0
+        shareButton.alpha = 0
+        let fadeIn = SKAction.sequence([
+            SKAction.waitForDuration(kAnimDelay * 3),
+            SKAction.fadeInWithDuration(kAnimDelay)
+            ])
+        okButton.runAction(fadeIn)
+        shareButton.runAction(fadeIn)
+        
+        let pops = SKAction.sequence([
+            SKAction.waitForDuration(kAnimDelay),
+            popAction,
+            SKAction.waitForDuration(kAnimDelay),
+            popAction,
+            SKAction.waitForDuration(kAnimDelay),
+            popAction,
+            SKAction.runBlock(switchToGameOver)
+            ])
+        runAction(pops)
+        
+    }
+    
     // MARK: Gameplay
     
     func createObstacle() -> SKSpriteNode {
@@ -280,9 +375,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case .Falling:
             break
         case .ShowingScore:
-            switchToNewGame()
             break
         case .GameOver:
+            switchToNewGame()
             break
         }
     }
@@ -418,6 +513,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         gameState = .ShowingScore
         player.removeAllActions()
         stopSpawning()
+        setupScoreCard()
     }
     
     func switchToNewGame() {
@@ -428,6 +524,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let transition = SKTransition.fadeWithColor(SKColor.blackColor(), duration: 0.5)
         view?.presentScene(newScene, transition: transition)
         
+    }
+    
+    func switchToGameOver() {
+        gameState = .GameOver
+    }
+    // MARK: Score
+    
+    func bestScore() -> Int {
+        return NSUserDefaults.standardUserDefaults().integerForKey("BestScore")
+    }
+    
+    func setBestScore(bestScore: Int) {
+        NSUserDefaults.standardUserDefaults().setInteger(bestScore, forKey: "BestScore")
+        NSUserDefaults.standardUserDefaults().synchronize()
     }
     
     // MARK: Physics
