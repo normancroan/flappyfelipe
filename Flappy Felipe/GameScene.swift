@@ -13,6 +13,7 @@ enum Layer: CGFloat {
     case Obstacle
     case Foreground
     case Player
+    case UI
 }
 
 enum GameState {
@@ -42,6 +43,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let kGapMultiplier: CGFloat = 3.5
     let kFirstSpawnDelay: NSTimeInterval = 1.75
     let kEverySpawnDelay: NSTimeInterval = 1.5
+    let kFontName = "AmericanTypeWriter-Bold"
+    let kMargin: CGFloat = 20.0
     
     let worldNode = SKNode()
     var playableStart: CGFloat = 0
@@ -54,6 +57,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var hitGround = false
     var hitObstacle = false
     var gameState: GameState = .Play
+    var scoreLabel: SKLabelNode!
+    var score = 0
     
     let dingAction = SKAction.playSoundFileNamed("ding.wav", waitForCompletion: false)
     let flapAction = SKAction.playSoundFileNamed("flapping.wav", waitForCompletion: false)
@@ -74,6 +79,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupPlayer()
         setupSombrero()
         startSpawning()
+        setupLabel()
         
         flapPlayer()
         
@@ -150,11 +156,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
+    func setupLabel() {
+        
+        scoreLabel = SKLabelNode(fontNamed: kFontName)
+        scoreLabel.fontColor = SKColor(red: 101.0/255.0, green: 71.0/255.0, blue: 73.0/255.0, alpha: 1.0)
+        scoreLabel.position = CGPoint(x: size.width/2, y: size.height - kMargin)
+        scoreLabel.text = "0"
+        scoreLabel.verticalAlignmentMode = .Top
+        scoreLabel.zPosition = Layer.UI.rawValue
+        worldNode.addChild(scoreLabel)
+    }
+    
     // MARK: Gameplay
     
     func createObstacle() -> SKSpriteNode {
         let sprite = SKSpriteNode(imageNamed: "Cactus")
         sprite.zPosition = Layer.Obstacle.rawValue
+        
+        sprite.userData = NSMutableDictionary()
         
         let offsetX = sprite.size.width * sprite.anchorPoint.x
         let offsetY = sprite.size.height * sprite.anchorPoint.y
@@ -288,6 +307,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             updatePlayer()
             checkHitObstacle()
             checkHitGround()
+            updateScore()
             break
         case .Falling:
             updatePlayer()
@@ -352,6 +372,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             runAction(hitGroundAction)
             switchToShowScore()
         }
+        
+    }
+    
+    func updateScore() {
+        
+        worldNode.enumerateChildNodesWithName("BottomObstacle", usingBlock: { node, stop in
+            if let obstacle = node as? SKSpriteNode {
+                
+                if let passed = obstacle.userData?["Passed"] as? NSNumber {
+                    if passed.boolValue {
+                        return
+                    }
+                }
+                if self.player.position.x > obstacle.position.x + obstacle.size.width/2 {
+                    self.score++
+                    self.scoreLabel.text = "\(self.score)"
+                    self.runAction(self.coinAction)
+                    obstacle.userData?["Passed"] = NSNumber(bool: true)
+                }
+            }
+            
+        })
         
     }
     
