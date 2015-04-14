@@ -92,14 +92,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         physicsWorld.contactDelegate = self
         
         addChild(worldNode)
-        setupBackground()
-        setupForeground()
-        setupPlayer()
-        setupSombrero()
-        startSpawning()
-        setupLabel()
         
-        flapPlayer()
+        switchToTutorial()
         
     }
     
@@ -279,6 +273,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
+    func setupTutorial() {
+        
+        let tutorial = SKSpriteNode(imageNamed: "Tutorial")
+        tutorial.position = CGPoint(x: size.width * 0.5, y: playableHeight * 0.4 + playableStart)
+        tutorial.name = "Tutorial"
+        tutorial.zPosition = Layer.UI.rawValue
+        worldNode.addChild(tutorial)
+        
+        let ready = SKSpriteNode(imageNamed: "Ready")
+        ready.position = CGPoint(x: size.width * 0.5, y: playableHeight * 0.7 + playableStart)
+        ready.name = "Tutorial"
+        ready.zPosition = Layer.UI.rawValue
+        worldNode.addChild(ready)
+        
+    }
+    
     // MARK: Gameplay
     
     func createObstacle() -> SKSpriteNode {
@@ -389,6 +399,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case .MainMenu:
             break
         case .Tutorial:
+            switchToPlay()
             break
         case .Play:
             flapPlayer()
@@ -554,6 +565,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func switchToGameOver() {
         gameState = .GameOver
     }
+    
+    func switchToTutorial() {
+        gameState = .Tutorial
+        setupBackground()
+        setupForeground()
+        setupPlayer()
+        setupSombrero()
+        setupLabel()
+        setupTutorial()
+    }
+    
+    func switchToPlay() {
+        // Set state
+        gameState = .Play
+        
+        // Remove tutorial
+        worldNode.enumerateChildNodesWithName("Tutorial", usingBlock: { node, stop in
+            node.runAction(SKAction.sequence([
+                SKAction.fadeOutWithDuration(0.5),
+                SKAction.removeFromParent()
+                ]))
+        })
+        
+        // Start spawning
+        startSpawning()
+        
+        // Move player
+        flapPlayer()
+    }
+
     // MARK: Score
     
     func bestScore() -> Int {
