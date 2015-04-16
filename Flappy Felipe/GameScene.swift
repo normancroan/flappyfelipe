@@ -77,8 +77,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let popAction = SKAction.playSoundFileNamed("pop.wav", waitForCompletion: false)
     let coinAction = SKAction.playSoundFileNamed("coin.wav", waitForCompletion: false)
     
-    init(size: CGSize, delegate:GameSceneDelegate) {
+    init(size: CGSize, delegate:GameSceneDelegate, gameState: GameState) {
         self.gameSceneDelegate = delegate
+        self.gameState = gameState
         super.init(size: size)
     }
 
@@ -93,8 +94,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         addChild(worldNode)
         
-        switchToTutorial()
-        
+        if gameState == .MainMenu {
+            switchToMainMenu()
+        } else {
+            switchToTutorial()
+        }
     }
     
     // MARK: Setup methods
@@ -289,6 +293,54 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
+    func setupMainMenu() {
+        
+        let logo = SKSpriteNode(imageNamed: "Logo")
+        logo.position = CGPoint(x: size.width/2, y: size.height * 0.8)
+        logo.zPosition = Layer.UI.rawValue
+        worldNode.addChild(logo)
+        
+        //Play Button
+        let playButton = SKSpriteNode(imageNamed: "Button")
+        playButton.position = CGPoint(x: size.width * 0.25, y: size.height * 0.25)
+        playButton.zPosition = Layer.UI.rawValue
+        worldNode.addChild(playButton)
+        
+        let play = SKSpriteNode(imageNamed: "Play")
+        play.position = CGPoint.zeroPoint
+        playButton.addChild(play)
+        
+        //Rate Button
+        let rateButton = SKSpriteNode(imageNamed: "Button")
+        rateButton.position = CGPoint(x: size.width * 0.75, y: size.height * 0.25)
+        rateButton.zPosition = Layer.UI.rawValue
+        worldNode.addChild(rateButton)
+        
+        let rate = SKSpriteNode(imageNamed: "Rate")
+        play.position = CGPoint.zeroPoint
+        rateButton.addChild(rate)
+        
+        // Learn Button
+        let learn = SKSpriteNode(imageNamed: "button_learn")
+        learn.position = CGPoint(x: size.width * 0.5, y: learn.size.height/2 + kMargin)
+        learn.zPosition = Layer.UI.rawValue
+        worldNode.addChild(learn)
+        
+        // Bounce Button
+        let scaleUp = SKAction.scaleTo(1.02, duration: 0.75)
+        scaleUp.timingMode = .EaseInEaseOut
+        let scaleDown = SKAction.scaleTo(0.98, duration: 0.75)
+        scaleDown.timingMode = .EaseInEaseOut
+        
+        
+        learn.runAction(SKAction.repeatActionForever(SKAction.sequence([
+            scaleUp, scaleDown
+            
+            ])))
+    
+    
+    }
+    
     // MARK: Gameplay
     
     func createObstacle() -> SKSpriteNode {
@@ -397,6 +449,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         switch gameState {
         case .MainMenu:
+            if touchLocation?.y < size.height * 0.15 {
+                learn()
+            } else if touchLocation?.x < size.width * 0.6 {
+                switchToNewGame(.Tutorial)
+            } else {
+                rateApp()
+            }
             break
         case .Tutorial:
             switchToPlay()
@@ -410,7 +469,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
         case .GameOver:
             if touchLocation?.x < size.width * 0.6 {
-            switchToNewGame()
+            switchToNewGame(.MainMenu)
             } else {
                 shareScore()
             }
@@ -530,6 +589,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // MARK: Game States
     
+    func switchToMainMenu() {
+        
+        gameState = .MainMenu
+        setupBackground()
+        setupForeground()
+        setupPlayer()
+        setupSombrero()
+        setupMainMenu()
+        
+    }
+    
+    
+    func switchToTutorial() {
+        gameState = .Tutorial
+        setupBackground()
+        setupForeground()
+        setupPlayer()
+        setupSombrero()
+        setupLabel()
+        setupTutorial()
+    }
+    
     func switchToFalling() {
         
         gameState = .Falling
@@ -552,11 +633,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupScoreCard()
     }
     
-    func switchToNewGame() {
+    func switchToNewGame(gameState: GameState) {
         
         runAction(popAction)
         
-        let newScene = GameScene(size: size, delegate: gameSceneDelegate)
+        let newScene = GameScene(size: size, delegate: gameSceneDelegate, gameState: gameState)
         let transition = SKTransition.fadeWithColor(SKColor.blackColor(), duration: 0.5)
         view?.presentScene(newScene, transition: transition)
         
@@ -565,16 +646,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func switchToGameOver() {
         gameState = .GameOver
     }
-    
-    func switchToTutorial() {
-        gameState = .Tutorial
-        setupBackground()
-        setupForeground()
-        setupPlayer()
-        setupSombrero()
-        setupLabel()
-        setupTutorial()
-    }
+
     
     func switchToPlay() {
         // Set state
@@ -615,6 +687,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let screenshot = gameSceneDelegate.screenshot()
         let initialTextString = "OMG! I scored \(score) points in Flappy Felipe!"
         gameSceneDelegate.shareString(initialTextString, url: url!, image: screenshot)
+        
+    }
+    
+    func rateApp() {
+        let urlString = "http://normancroan.com"
+        let url = NSURL(string: urlString)
+        UIApplication.sharedApplication().openURL(url!)
+
+    }
+    
+    func learn() {
+        let urlString = "http://www.raywenderlich.com/flappy-felipe"
+        let url = NSURL(string: urlString)
+        UIApplication.sharedApplication().openURL(url!)
         
     }
     
