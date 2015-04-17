@@ -53,6 +53,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let kFontName = "AmericanTypeWriter-Bold"
     let kMargin: CGFloat = 20.0
     let kAnimDelay = 0.3
+    let kNumBirdFrames = 4
     
     let worldNode = SKNode()
     var playableStart: CGFloat = 0
@@ -341,6 +342,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     }
     
+    func setupPlayerAnimation() {
+        
+        var textures: Array<SKTexture> = []
+        for i in 0..<kNumBirdFrames {
+            textures.append(SKTexture(imageNamed: "Bird\(i)"))
+        }
+        for i in stride(from: kNumBirdFrames-1, through: 0, by: -1) {
+            textures.append(SKTexture(imageNamed: "Bird\(i)"))
+        }
+        
+        let playerAnimation = SKAction.animateWithTextures(textures, timePerFrame: 0.07)
+        player.runAction(SKAction.repeatActionForever(playerAnimation))
+        
+    }
+    
     // MARK: Gameplay
     
     func createObstacle() -> SKSpriteNode {
@@ -597,6 +613,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupPlayer()
         setupSombrero()
         setupMainMenu()
+        setupPlayerAnimation()
         
     }
     
@@ -609,6 +626,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupSombrero()
         setupLabel()
         setupTutorial()
+        setupPlayerAnimation()
     }
     
     func switchToFalling() {
