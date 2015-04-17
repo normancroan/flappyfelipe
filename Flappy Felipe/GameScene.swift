@@ -177,6 +177,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         worldNode.addChild(player)
         
+        
+        let moveUp = SKAction.moveByX(0, y: 10, duration: 0.4)
+        moveUp.timingMode = .EaseInEaseOut
+        let moveDown = moveUp.reversedAction()
+        let sequence = SKAction.sequence([moveUp, moveDown])
+        let repeat = SKAction.repeatActionForever(sequence)
+        player.runAction(repeat, withKey: "Wobble")
+        
     }
     
     func setupSombrero() {
@@ -711,6 +719,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 SKAction.removeFromParent()
                 ]))
         })
+        
+        // Stop wobble
+        player.removeActionForKey("Wobble")
         
         // Start spawning
         startSpawning()
