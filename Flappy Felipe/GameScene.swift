@@ -360,7 +360,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             ])))
     
-    
+//        learn.removeAllActions() //DONLY
     }
     
     func setupPlayerAnimation() {
@@ -521,6 +521,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: Updates
     
     override func update(currentTime: CFTimeInterval) {
+        
+//        return // DONLY
+        
         if lastUpdateTime > 0 {
             dt = currentTime - lastUpdateTime
         } else {
@@ -644,6 +647,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupSombrero()
         setupMainMenu()
         setupPlayerAnimation()
+        
+//        player.removeAllActions() //DONLY
         
     }
     
