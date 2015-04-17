@@ -14,6 +14,7 @@ enum Layer: CGFloat {
     case Foreground
     case Player
     case UI
+    case Flash
 }
 
 enum GameState {
@@ -652,6 +653,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func switchToFalling() {
         
         gameState = .Falling
+        
+        // Screen shake
+        let shake = SKAction.screenShakeWithNode(worldNode, amount: CGPoint(x: 0, y: 7.0), oscillations: 10, duration: 1.0)
+        worldNode.runAction(shake)
+        
+        
+        // Flash
+        let whiteNode = SKSpriteNode(color: SKColor.whiteColor(), size: size)
+        whiteNode.position = CGPoint(x: size.width/2, y: size.height/2)
+        whiteNode.zPosition = Layer.Flash.rawValue
+        worldNode.addChild(whiteNode)
+        
+        whiteNode.runAction(SKAction.removeFromParentAfterDelay(0.01))
         
         runAction(SKAction.sequence([
             whackAction,
