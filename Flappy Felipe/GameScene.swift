@@ -562,6 +562,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Apply velocity
         let velocityStep = playerVelocity * CGFloat(dt)
         player.position += velocityStep
+        player.position = CGPoint(x: player.position.x, y: min(player.position.y, size.height))
         
         if player.position.y < lastTouchY {
             playerAngularVelocity = -kAngularVelocity.degreesToRadians()
