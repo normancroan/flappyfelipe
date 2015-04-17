@@ -41,6 +41,8 @@ protocol GameSceneDelegate {
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
+    
+    //MARK: - Konstants (lol K)
     let kGravity: CGFloat = -1500.0
     let kImpulse: CGFloat = 400.0
     let kNumForegrounds = 2
@@ -54,7 +56,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let kMargin: CGFloat = 20.0
     let kAnimDelay = 0.3
     let kNumBirdFrames = 4
+    let kMinDegrees: CGFloat = -90
+    let kMaxDegrees: CGFloat = 25
+    let kAngularVelocity: CGFloat = 1000.0
     
+    
+    //MARK: Variables
     let worldNode = SKNode()
     var playableStart: CGFloat = 0
     var playableHeight: CGFloat = 0
@@ -69,7 +76,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var scoreLabel: SKLabelNode!
     var score = 0
     var gameSceneDelegate: GameSceneDelegate
+    var playerAngularVelocity: CGFloat = 0.0
+    var lastTouchTime: NSTimeInterval = 0
+    var lastTouchY: CGFloat = 0.0
     
+    
+    //MARK: Actions/Sounds
     let dingAction = SKAction.playSoundFileNamed("ding.wav", waitForCompletion: false)
     let flapAction = SKAction.playSoundFileNamed("flapping.wav", waitForCompletion: false)
     let whackAction = SKAction.playSoundFileNamed("whack.wav", waitForCompletion: false)
@@ -449,6 +461,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Apply impulse
         playerVelocity = CGPoint(x: 0, y: kImpulse)
+        playerAngularVelocity = kAngularVelocity.degreesToRadians()
+        lastTouchTime = lastUpdateTime
+        lastTouchY = player.position.y
+        
         
         // Move sombrero
         let moveUp = SKAction.moveByX(0, y: 12, duration: 0.15)
@@ -538,10 +554,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let velocityStep = playerVelocity * CGFloat(dt)
         player.position += velocityStep
         
-        // Temporary halt when hits ground
-        if player.position.y - player.size.height/2 < playableStart {
-            player.position = CGPoint(x: player.position.x, y: playableStart + player.size.height/2)
+        if player.position.y < lastTouchY {
+            playerAngularVelocity = -kAngularVelocity.degreesToRadians()
         }
+        
+        // Rotate player
+        let angularStep = playerAngularVelocity * CGFloat(dt)
+        player.zRotation += angularStep
+        player.zRotation = min(max(player.zRotation, kMinDegrees.degreesToRadians()),kMaxDegrees.degreesToRadians())
         
     }
     
